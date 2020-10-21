@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <cctype>
+#include <queue>
 #include "ArgumentManager.h"
 using namespace std;
 
@@ -11,7 +12,78 @@ struct task
     double time = 0.0;
 };
 
-//----------------------------------------------------- MAIN FUNCTION -----------------------------------------------
+void swap(task& first, task& second)
+{
+    task temp;
+
+    temp.name = first.name;
+    temp.time = first.time;
+
+    first.name = second.name;
+    first.time = second.time;
+
+    second.name = temp.name;
+    second.time = temp.time;
+}
+
+// ---------------------------------------------------- HELPER FUNCTION -------------------------------------------
+
+void heapify(task arr[], int size, int root)
+{
+    //Initialize largest as root/parent
+    int largest = root;
+
+    //Initialize children
+    int left = 2 * root + 1;
+    int right = 2 * root + 2;
+
+    //If the left child is larger
+    if (left < size && arr[left].time > arr[largest].time)
+    {
+        largest = left;
+    }
+
+    //If right child is larger than largest so far
+    if (right < size && arr[right].time > arr[largest].time)
+    {
+        largest = right;
+    }
+
+    //If the largest element is not root
+    if (largest != root)
+    {
+        swap(arr[largest], arr[root]);
+
+        //Recursively heapify the affected sub-tree/children
+        //The index largest maybe is the root of another tree 
+        heapify(arr, size, largest);
+    }
+}
+
+// ------------------------------------------------------ HEAP SORT -----------------------------------------------
+
+void HeapSort(task arr[], int size)
+{
+    //First Step: Build heap / visualize array
+    for (int i = size / 2 - 1; i >= 0; i--)
+    {
+        //Sort from bottom to the top
+        heapify(arr, size, i);
+    }
+
+    //Second Step: Extract the largest element from heap and put it at the end (sorted position)
+    for (int i = size - 1; i > 0; i--)
+    {
+        //Move current root to end
+        swap(arr[0], arr[i]);
+
+        //Call max heapify on the reduced heap (ignore the sorted position)
+        //Sort from top to the bottom
+        heapify(arr, i, 0);
+    }
+}
+
+// ----------------------------------------------------- MAIN FUNCTION -----------------------------------------------
 
 int main(int argc, char* argv[])
 {
@@ -22,8 +94,8 @@ int main(int argc, char* argv[])
     //string output = am.get("output");
 
     //Test
-    string input = "input1.txt";
-    string output = "output1.txt";
+    string input = "input3.txt";
+    string output = "output3.txt";
 
     ifstream inFS;
     ofstream outFS;
@@ -129,9 +201,21 @@ int main(int argc, char* argv[])
             cout << taskList[i].name << taskList[i].time << endl;
         }
 
+        HeapSort(taskList, counter);
 
+        cout << endl;
 
+        for (int i = 0; i < counter; i++)
+        {
+            cout << taskList[i].name << taskList[i].time << endl;
+        }
 
+        for (int i = 0; i < counter - 1; i++)
+        {
+            outFS << taskList[i].name << endl;
+        }
+
+        outFS << taskList[counter - 1].name;
 
     }
     catch (runtime_error & e)
@@ -144,14 +228,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
