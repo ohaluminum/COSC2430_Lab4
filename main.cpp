@@ -2,86 +2,91 @@
 #include <fstream>
 #include <sstream>
 #include <cctype>
-#include <queue>
 #include "ArgumentManager.h"
 using namespace std;
 
-struct task
+struct Task
 {
-    string name = "";
-    double time = 0.0;
+    string name;
+    double time;
+
+    Task(string taskName = "Unknown", double taskTime = 0.0)
+    {
+        name = taskName;
+        time = taskTime;
+    }
 };
 
-void swap(task& first, task& second)
+class PriorityQueue
 {
-    task temp;
+private:
+    Task* heap;
+    int size;
+    int maxSize;
 
-    temp.name = first.name;
-    temp.time = first.time;
+public:
 
-    first.name = second.name;
-    first.time = second.time;
-
-    second.name = temp.name;
-    second.time = temp.time;
-}
-
-// ---------------------------------------------------- HELPER FUNCTION -------------------------------------------
-
-void heapify(task arr[], int size, int root)
-{
-    //Initialize largest as root/parent
-    int largest = root;
-
-    //Initialize children
-    int left = 2 * root + 1;
-    int right = 2 * root + 2;
-
-    //If the left child is larger
-    if (left < size && arr[left].time > arr[largest].time)
+    //Default Constructor
+    PriorityQueue(int max = 0)
     {
-        largest = left;
+        maxSize = max;
+        heap = new Task[maxSize];
+        size = 0;
     }
 
-    //If right child is larger than largest so far
-    if (right < size && arr[right].time > arr[largest].time)
+    Task* getHeap()
     {
-        largest = right;
+        return heap;
     }
 
-    //If the largest element is not root
-    if (largest != root)
+    bool isFull()
     {
-        swap(arr[largest], arr[root]);
+        if (size == maxSize)
+        {
+            return true;
+        }
 
-        //Recursively heapify the affected sub-tree/children
-        //The index largest maybe is the root of another tree 
-        heapify(arr, size, largest);
-    }
-}
-
-// ------------------------------------------------------ HEAP SORT -----------------------------------------------
-
-void HeapSort(task arr[], int size)
-{
-    //First Step: Build heap / visualize array
-    for (int i = size / 2 - 1; i >= 0; i--)
-    {
-        //Sort from bottom to the top
-        heapify(arr, size, i);
+        return false;
     }
 
-    //Second Step: Extract the largest element from heap and put it at the end (sorted position)
-    for (int i = size - 1; i > 0; i--)
+    void push(Task temp)
     {
-        //Move current root to end
-        swap(arr[0], arr[i]);
-
-        //Call max heapify on the reduced heap (ignore the sorted position)
-        //Sort from top to the bottom
-        heapify(arr, i, 0);
+        //Push new task at the queue
+        if (!isFull())
+        {
+            heap[size] = temp;
+            size++;
+        }
     }
-}
+
+    void InsertionSort()
+    {
+        int i;
+        int j;
+        string key_name;
+        double key_time;
+
+        for (i = 1; i < size; i++)
+        {
+            key_name = heap[i].name;
+            key_time = heap[i].time;
+            j = i - 1;
+
+            //Move elements of arr[0..i-1], 
+            //which are greater than key, 
+            //to one position after of their current position.
+            while (j >= 0 && heap[j].time > key_time)
+            {
+                heap[j + 1].name = heap[j].name;
+                heap[j + 1].time = heap[j].time;
+                j = j - 1;
+            }
+
+            heap[j + 1].name = key_name;
+            heap[j + 1].time = key_time;
+        }
+    }
+};
 
 // ----------------------------------------------------- MAIN FUNCTION -----------------------------------------------
 
@@ -90,12 +95,12 @@ int main(int argc, char* argv[])
     ArgumentManager am(argc, argv);
 
     //Get the filename of argument name "input" and "output" and "command"
-    //string input = am.get("input");
-    //string output = am.get("output");
+    string input = am.get("input");
+    string output = am.get("output");
 
     //Test
-    string input = "input3.txt";
-    string output = "output3.txt";
+    //string input = "input3.txt";
+    //string output = "output3.txt";
 
     ifstream inFS;
     ofstream outFS;
@@ -150,13 +155,12 @@ int main(int argc, char* argv[])
             throw runtime_error("ERROR: File is empty");
         }
 
-        //Create a dynamic array to store task
-        task* taskList = new task[counter];
-        int index = 0;
+        //Create a queue to store task
+        PriorityQueue taskList(counter);
 
         string taskName;
-        string taskTime_str;
         double taskTime;
+        Task temp;
 
         //Read the input file line by line
         while (getline(inFS, line))
@@ -167,55 +171,22 @@ int main(int argc, char* argv[])
                 continue;
             }
 
-            taskName = "";
-            taskTime_str = "";
+            taskName = line.substr(0, line.find_last_of(" "));
+            taskTime = stod(line.substr(line.find_last_of(" ") + 1));
 
-            //Read task name and time information
-            for (int i = 0; i < line.length(); i++)
-            {
-                //If line[i] is part of the task time
-                if (isdigit(line[i]) || line[i] == '.')
-                {
-                    taskTime_str += line[i];
-                }
-
-                //If line[i] is part of the task name
-                else
-                {
-                    taskName += line[i];
-                }
-            }
-
-            taskName.erase(taskName.length() - 1);
-
-            taskTime = stod(taskTime_str);
-
-            taskList[index].name = taskName;
-            taskList[index].time = taskTime;
-
-            index++;
+            temp.name = taskName;
+            temp.time = taskTime;
+            taskList.push(temp);
         }
 
-        for (int i = 0; i < counter; i++)
-        {
-            cout << taskList[i].name << taskList[i].time << endl;
-        }
-
-        HeapSort(taskList, counter);
-
-        cout << endl;
-
-        for (int i = 0; i < counter; i++)
-        {
-            cout << taskList[i].name << taskList[i].time << endl;
-        }
+        taskList.InsertionSort();
 
         for (int i = 0; i < counter - 1; i++)
         {
-            outFS << taskList[i].name << endl;
+            outFS << taskList.getHeap()[i].name << endl;
         }
 
-        outFS << taskList[counter - 1].name;
+        outFS << taskList.getHeap()[counter - 1].name;
 
     }
     catch (runtime_error & e)
